@@ -32,7 +32,26 @@ class MyWebServer(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
-        self.request.sendall(bytearray("OK",'utf-8'))
+
+        self.parse_request()
+
+
+        # https://www.codementor.io/@joaojonesventura/building-a-basic-http-server-from-scratch-in-python-1cedkg0842
+        with open('www/index.html') as html:
+            page = html.read()
+
+        header = "HTTP/1.1 200 OK\n\n"
+        self.send_response(header, page)
+
+
+        # self.request.sendall(bytearray("OK",'utf-8'))
+
+    def parse_request(self):
+        pass
+
+    def send_response(self, header, page):
+        self.request.sendall((header + page).encode())
+
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
