@@ -1,5 +1,6 @@
 #  coding: utf-8 
 import socketserver
+import os
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -33,24 +34,118 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
 
+        self.base = 'www'
         self.parse_request()
+        
+        # Send a 405 response for methods we can't handle
+        if not self.valid_method():
+
+            header = "HTTP/1.1 405 Method Not Allowed\n\n"
+            response = '<html><body><center><h3>Error 405: Method not allowed</h3></center></body></html>' #.encode('utf-8')
+            self.send_response(header, response)
+
+        else:
+            self.file_path = os.path.join(self.base, self.caller_file)
+            print(1, self.file_path)
+
+            # Check if we need to send 301 response
+            if self.validate_path():
+
+                self.file_path = os.path.join(self.base, self.caller_file)
+                print(1, self.file_path)
 
 
-        # https://www.codementor.io/@joaojonesventura/building-a-basic-http-server-from-scratch-in-python-1cedkg0842
-        with open('www/index.html') as html:
-            page = html.read()
+                # Check to see if page exists
+                try:
+                    print("\n\n", self.file_path, os.path.exists(self.file_path))
+                    if not os.path.exists(self.file_path):
+                        raise FileNotFoundError
 
-        header = "HTTP/1.1 200 OK\n\n"
-        self.send_response(header, page)
+
+
+                except Exception as e:
+                    # if self.file_path == 'www/favicon.ico':
+                    #     pass
+                    # else:
+                    header = "HTTP/1.1 404 Not Found\n\n"
+                    response = '<html><body><center><h3>Error 404: File not found</h3></center></body></html>' #.encode('utf-8')
+                    self.send_response(header, response)
+    
+                else:
+                    # https://stackoverflow.com/questions/70998506/how-to-respond-to-a-get-request-for-favicon-ico-in-a-local-webserver-using-socke
+                    if self.file_path == 'www/favicon.ico':
+                        with open(self.file_path, "rb") as f:
+                            ico = f.read()
+                        response = f"Content-Type: image/x-icon\r\nContent-Length: {len(ico)}\r\n\r\n"
+
+                    else:    
+                        # https://www.codementor.io/@joaojonesventura/building-a-basic-http-server-from-scratch-in-python-1cedkg0842
+                        with open(self.file_path) as f:
+                            response = f.read()
+
+                    header = "HTTP/1.1 200 OK\n\n"
+                    self.send_response(header, response)
 
 
         # self.request.sendall(bytearray("OK",'utf-8'))
 
-    def parse_request(self):
-        pass
 
-    def send_response(self, header, page):
+    # emalsha.wordpress.com/2016/11/24/how-create-http-server-using-python-socket-part-ii
+    def parse_request(self):
+
+        parts = str(self.data).split(' ')
+        self.method = parts[0][2:]
+        self.caller_file = parts[1].lstrip('/')
+        print("file: ", self.caller_file)
+
+
+    def valid_method(self):
+        if self.method == "GET":
+            return True
+        else:
+            return False
+
+
+    def send_response(self, header, page=''):
         self.request.sendall((header + page).encode())
+
+
+    def validate_path(self):
+        if self.file_path.endswith('/'):
+            print("Ends with /")
+            self.file_path += 'index.html'
+            return True
+        elif self.file_path == (self.base + '/'):
+            print("Base folder")
+            self.file_path = os.path.join(self.base, 'index.html')
+            return True
+        else:
+            redirect_path = self.caller_file + '/'
+            print("\n\nredirect path:", redirect_path)
+            header = f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:8080/{redirect_path}\n\n"
+            self.send_response(header)
+
+            return False
+
+
+
+
+    # def validate_path(self):
+    #     if self.file_path.endswith('/'):
+    #         self.file_path = os.path.join(self.file_path, 'index.html')
+    #     elif self.file_path == (self.base + '/'):
+    #         self.file_path = os.path.join(self.base, 'index.html')
+
+    
+    # def needs_redirect(self):
+    #     if not self.caller_file.endswith('/'):
+    #         redirect_path = self.caller_file + '/'
+    #         print("\n\n", redirect_path)
+    #         header = f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:8080/{redirect_path}\n\n"
+    #         self.send_response(header)
+    #         return True
+    #     else:
+    #         return False
 
 
 if __name__ == "__main__":
