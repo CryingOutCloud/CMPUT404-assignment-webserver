@@ -34,54 +34,57 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
 
-        self.base = 'www'
-        self.parse_request()
-        
-        # Send a 405 response for methods we can't handle
-        if not self.valid_method():
+        # Ignore empty requests
+        if self.data != b'':
 
-            header = "HTTP/1.1 405 Method Not Allowed\n\n"
-            response = '<html><body><center><h3>Error 405: Method not allowed</h3></center></body></html>' #.encode('utf-8')
-            self.send_response(header, response)
+            self.base = 'www'
+            self.parse_request()
+            
+            # Send a 405 response for methods we can't handle
+            if not self.valid_method():
 
-        else:
-            self.file_path = os.path.join(self.base, self.caller_file)
-            print(1, self.file_path)
-
-
-            # Check to see if page exists
-            try:
-
-                print("\n\n", self.file_path, os.path.exists(self.file_path))
-                if not os.path.exists(self.file_path):
-                    raise FileNotFoundError
-
-
-
-            except Exception as e:
-                # if self.file_path == 'www/favicon.ico':
-                #     pass
-                # else:
-                header = "HTTP/1.1 404 Not Found\n\n"
-                response = '<html><body><center><h3>Error 404: File not found</h3></center></body></html>' #.encode('utf-8')
+                header = "HTTP/1.1 405 Method Not Allowed\n\n"
+                response = '<html><body><center><h3>Error 405: Method not allowed</h3></center></body></html>' #.encode('utf-8')
                 self.send_response(header, response)
 
             else:
+                self.file_path = os.path.join(self.base, self.caller_file)
+                print(1, self.file_path)
 
-                if self.validate_path():
-                    # https://stackoverflow.com/questions/70998506/how-to-respond-to-a-get-request-for-favicon-ico-in-a-local-webserver-using-socke
-                    if self.file_path == 'www/favicon.ico':
-                        with open(self.file_path, "rb") as f:
-                            ico = f.read()
-                        response = f"Content-Type: image/x-icon\r\nContent-Length: {len(ico)}\r\n\r\n"
 
-                    else:    
-                        # https://www.codementor.io/@joaojonesventura/building-a-basic-http-server-from-scratch-in-python-1cedkg0842
-                        with open(self.file_path) as f:
-                            response = f.read()
+                # Check to see if page exists
+                try:
 
-                    header = "HTTP/1.1 200 OK\n\n"
+                    print("\n\n", self.file_path, os.path.exists(self.file_path))
+                    if not os.path.exists(self.file_path):
+                        raise FileNotFoundError
+
+
+
+                except Exception as e:
+                    # if self.file_path == 'www/favicon.ico':
+                    #     pass
+                    # else:
+                    header = "HTTP/1.1 404 Not Found\n\n"
+                    response = '<html><body><center><h3>Error 404: File not found</h3></center></body></html>' #.encode('utf-8')
                     self.send_response(header, response)
+
+                else:
+
+                    if self.validate_path():
+                        # https://stackoverflow.com/questions/70998506/how-to-respond-to-a-get-request-for-favicon-ico-in-a-local-webserver-using-socke
+                        if self.file_path == 'www/favicon.ico':
+                            with open(self.file_path, "rb") as f:
+                                ico = f.read()
+                            response = f"Content-Type: image/x-icon\r\nContent-Length: {len(ico)}\r\n\r\n"
+
+                        else:    
+                            # https://www.codementor.io/@joaojonesventura/building-a-basic-http-server-from-scratch-in-python-1cedkg0842
+                            with open(self.file_path) as f:
+                                response = f.read()
+
+                        header = "HTTP/1.1 200 OK\n\n"
+                        self.send_response(header, response)
 
 
         # self.request.sendall(bytearray("OK",'utf-8'))
