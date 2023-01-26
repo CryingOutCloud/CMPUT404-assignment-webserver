@@ -49,13 +49,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
             print(1, self.file_path)
 
 
-
-            self.file_path = os.path.join(self.base, self.caller_file)
-            print(1, self.file_path)
-
-
             # Check to see if page exists
             try:
+
                 print("\n\n", self.file_path, os.path.exists(self.file_path))
                 if not os.path.exists(self.file_path):
                     raise FileNotFoundError
@@ -120,7 +116,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
             print("Base folder")
             self.file_path = os.path.join(self.base, 'index.html')
             return True
-        else:
+        elif not self.file_path.endswith('/') and os.path.isdir(self.file_path):
             redirect_path = self.caller_file + '/'
             print("\n\nredirect path:", redirect_path)
             header = f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:8080/{redirect_path}\n\n"
@@ -128,7 +124,10 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
             return False
 
-        return True
+        else:
+            self.file_path = self.file_path.strip('/')
+
+            return True
 
 
 
