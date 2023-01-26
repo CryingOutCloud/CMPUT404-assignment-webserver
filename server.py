@@ -48,30 +48,31 @@ class MyWebServer(socketserver.BaseRequestHandler):
             self.file_path = os.path.join(self.base, self.caller_file)
             print(1, self.file_path)
 
-            # Check if we need to send 301 response
-            if self.validate_path():
-
-                self.file_path = os.path.join(self.base, self.caller_file)
-                print(1, self.file_path)
 
 
-                # Check to see if page exists
-                try:
-                    print("\n\n", self.file_path, os.path.exists(self.file_path))
-                    if not os.path.exists(self.file_path):
-                        raise FileNotFoundError
+            self.file_path = os.path.join(self.base, self.caller_file)
+            print(1, self.file_path)
+
+
+            # Check to see if page exists
+            try:
+                print("\n\n", self.file_path, os.path.exists(self.file_path))
+                if not os.path.exists(self.file_path):
+                    raise FileNotFoundError
 
 
 
-                except Exception as e:
-                    # if self.file_path == 'www/favicon.ico':
-                    #     pass
-                    # else:
-                    header = "HTTP/1.1 404 Not Found\n\n"
-                    response = '<html><body><center><h3>Error 404: File not found</h3></center></body></html>' #.encode('utf-8')
-                    self.send_response(header, response)
-    
-                else:
+            except Exception as e:
+                # if self.file_path == 'www/favicon.ico':
+                #     pass
+                # else:
+                header = "HTTP/1.1 404 Not Found\n\n"
+                response = '<html><body><center><h3>Error 404: File not found</h3></center></body></html>' #.encode('utf-8')
+                self.send_response(header, response)
+
+            else:
+
+                if self.validate_path():
                     # https://stackoverflow.com/questions/70998506/how-to-respond-to-a-get-request-for-favicon-ico-in-a-local-webserver-using-socke
                     if self.file_path == 'www/favicon.ico':
                         with open(self.file_path, "rb") as f:
@@ -111,7 +112,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
 
     def validate_path(self):
-        if self.file_path.endswith('/'):
+        if self.file_path.endswith('/') and os.path.isdir(self.file_path):
             print("Ends with /")
             self.file_path += 'index.html'
             return True
@@ -126,6 +127,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
             self.send_response(header)
 
             return False
+
+        return True
 
 
 
