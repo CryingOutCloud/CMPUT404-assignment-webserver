@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from pathlib import Path
 
 # Copyright 2023 Noah Batiuk
-
+#
 # Adapted from Abram Hindle, Eddie Antonio Santos, 2013
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,9 +32,12 @@ from pathlib import Path
 # try: curl -v -X GET http://127.0.0.1:8080/
 
 
+
+
 class MyWebServer(socketserver.BaseRequestHandler):
     
     # https://gist.github.com/HaiyangXu/ec88cbdce3cdbac7b8d5
+    # Hash containing file types and their corresponding content-types
     extensions_map={
         'manifest': 'text/cache-manifest',
         'html': 'text/html',
@@ -67,30 +70,25 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
             else:
                 self.file_path = os.path.join(self.base, self.caller_file)
-                print(1, self.file_path)
-
-                self.url_too_deep()
 
                 # Check to see if page exists
                 try:
-                    print("\n\n", self.file_path, os.path.exists(self.file_path))
+                    # check to see if requested path exists
                     if not os.path.exists(self.file_path):
                         raise FileNotFoundError
 
+                    # Check if url falls deeper than www
                     if self.url_too_deep():
                         raise FileNotFoundError
 
+                # Send 404 response
                 except Exception as e:
                     print("File not found")
-                    # if self.file_path == 'www/favicon.ico':
-                    #     pass
-                    # else:
                     header = "HTTP/1.1 404 Not Found\n\n"
                     response = '<html><body><center><h3>Error 404: File not found</h3></center></body></html>' #.encode('utf-8')
                     self.send_response(header, response)
 
                 else:
-
                     if self.validate_path():
 
                         # https://stackoverflow.com/questions/70998506/how-to-respond-to-a-get-request-for-favicon-ico-in-a-local-webserver-using-socke
@@ -114,7 +112,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
     # emalsha.wordpress.com/2016/11/24/how-create-http-server-using-python-socket-part-ii
     def parse_request(self):
-
         parts = str(self.data).split(' ')
         self.method = parts[0][2:]
         self.caller_file = parts[1].lstrip('/')
@@ -132,26 +129,29 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.request.sendall((header + page).encode())
 
 
+    # Make any changes needed to the path
     def validate_path(self):
+
+        # Case 1: received a directory ending in '/'
         if self.file_path.endswith('/') and os.path.isdir(self.file_path):
-            print("Ends with /")
             self.file_path += 'index.html'
             return True
+
+        # Case 2: received base directory
         elif self.file_path == (self.base + '/'):
-            print("Base folder")
             self.file_path = os.path.join(self.base, 'index.html')
             return True
+
+        # Case 3: received a directory missing the '/', send 301
         elif not self.file_path.endswith('/') and os.path.isdir(self.file_path):
             redirect_path = self.caller_file + '/'
-            print("\n\nredirect path:", redirect_path)
             header = f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://127.0.0.1:8080/{redirect_path}\n\n"
             self.send_response(header)
-
             return False
 
+        # Case 4: Valid path given
         else:
             self.file_path = self.file_path.strip('/')
-
             return True
 
 
