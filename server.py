@@ -2,6 +2,7 @@
 import socketserver
 import os
 from urllib.parse import urlparse
+from pathlib import Path
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -68,17 +69,19 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 self.file_path = os.path.join(self.base, self.caller_file)
                 print(1, self.file_path)
 
+                self.url_too_deep()
 
                 # Check to see if page exists
                 try:
-
                     print("\n\n", self.file_path, os.path.exists(self.file_path))
                     if not os.path.exists(self.file_path):
                         raise FileNotFoundError
 
-
+                    if self.url_too_deep():
+                        raise FileNotFoundError
 
                 except Exception as e:
+                    print("File not found")
                     # if self.file_path == 'www/favicon.ico':
                     #     pass
                     # else:
@@ -100,7 +103,10 @@ class MyWebServer(socketserver.BaseRequestHandler):
                             with open(self.file_path) as f:
                                 response = f.read()
 
-                        header = "HTTP/1.1 200 OK\n\n"
+                        extension = self.file_path.split('.')[1]
+                        content_type = self.extensions_map[extension]
+
+                        header = f"HTTP/1.1 200 OK\r\nContent-Type: {content_type}\n\n"
                         self.send_response(header, response)
 
 
@@ -139,7 +145,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         elif not self.file_path.endswith('/') and os.path.isdir(self.file_path):
             redirect_path = self.caller_file + '/'
             print("\n\nredirect path:", redirect_path)
-            header = f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:8080/{redirect_path}\n\n"
+            header = f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://127.0.0.1:8080/{redirect_path}\n\n"
             self.send_response(header)
 
             return False
@@ -148,6 +154,21 @@ class MyWebServer(socketserver.BaseRequestHandler):
             self.file_path = self.file_path.strip('/')
 
             return True
+
+
+    # https://stackoverflow.com/questions/3812849/how-to-check-whether-a-directory-is-a-sub-directory-of-another-directory
+    def url_too_deep(self):
+
+        # Gets full path for both base and url
+        parent_path = os.path.abspath(self.base)
+        child_path = os.path.abspath(self.file_path)
+
+        # See if base is alon the path for self.file_path
+        common = os.path.commonpath([parent_path]) == os.path.commonpath([parent_path, child_path])
+        print("Is parent: ", common)
+
+        return not common
+
 
 
 
@@ -171,7 +192,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
 
 if __name__ == "__main__":
-    HOST, PORT = "localhost", 8080
+    HOST, PORT = "127.0.0.1", 8080
 
     socketserver.TCPServer.allow_reuse_address = True
     # Create the server, binding to localhost on port 8080
