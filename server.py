@@ -4,7 +4,9 @@ import os
 from urllib.parse import urlparse
 from pathlib import Path
 
-# Copyright 2013 Abram Hindle, Eddie Antonio Santos
+# Copyright 2023 Noah Batiuk
+
+# Adapted from Abram Hindle, Eddie Antonio Santos, 2013
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,8 +32,6 @@ from pathlib import Path
 # try: curl -v -X GET http://127.0.0.1:8080/
 
 
-
-
 class MyWebServer(socketserver.BaseRequestHandler):
     
     # https://gist.github.com/HaiyangXu/ec88cbdce3cdbac7b8d5
@@ -46,7 +46,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         '': 'application/octet-stream', # Default
     }
 
-
+    # Main loop of program
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
@@ -92,26 +92,25 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 else:
 
                     if self.validate_path():
+
                         # https://stackoverflow.com/questions/70998506/how-to-respond-to-a-get-request-for-favicon-ico-in-a-local-webserver-using-socke
                         if self.file_path == 'www/favicon.ico':
                             with open(self.file_path, "rb") as f:
                                 ico = f.read()
-                            response = f"Content-Type: image/x-icon\r\nContent-Length: {len(ico)}\r\n\r\n" + ico
+                            response = f"HTTP/1.1 200 OK\r\nContent-Type: image/x-icon\r\nContent-Length: {len(ico)}\r\n\r\n" 
+                            self.request.sendall((response).encode())
 
                         else:    
+                            extension = self.file_path.split('.')[1]
+                            content_type = self.extensions_map[extension]
+                            header = f"HTTP/1.1 200 OK\r\nContent-Type: {content_type}\n\n"
+
                             # https://www.codementor.io/@joaojonesventura/building-a-basic-http-server-from-scratch-in-python-1cedkg0842
                             with open(self.file_path) as f:
                                 response = f.read()
 
-                        extension = self.file_path.split('.')[1]
-                        content_type = self.extensions_map[extension]
-
-                        header = f"HTTP/1.1 200 OK\r\nContent-Type: {content_type}\n\n"
-                        self.send_response(header, response)
-
-
-        # self.request.sendall(bytearray("OK",'utf-8'))
-
+                            self.send_response(header, response)
+                            
 
     # emalsha.wordpress.com/2016/11/24/how-create-http-server-using-python-socket-part-ii
     def parse_request(self):
@@ -170,25 +169,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
         return not common
 
 
-
-
-
-    # def validate_path(self):
-    #     if self.file_path.endswith('/'):
-    #         self.file_path = os.path.join(self.file_path, 'index.html')
-    #     elif self.file_path == (self.base + '/'):
-    #         self.file_path = os.path.join(self.base, 'index.html')
-
-    
-    # def needs_redirect(self):
-    #     if not self.caller_file.endswith('/'):
-    #         redirect_path = self.caller_file + '/'
-    #         print("\n\n", redirect_path)
-    #         header = f"HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:8080/{redirect_path}\n\n"
-    #         self.send_response(header)
-    #         return True
-    #     else:
-    #         return False
 
 
 if __name__ == "__main__":
