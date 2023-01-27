@@ -28,8 +28,23 @@ import os
 # try: curl -v -X GET http://127.0.0.1:8080/
 
 
+
+
 class MyWebServer(socketserver.BaseRequestHandler):
     
+    # https://gist.github.com/HaiyangXu/ec88cbdce3cdbac7b8d5
+    self.extensions_map={
+        '.manifest': 'text/cache-manifest',
+        '.html': 'text/html',
+        '.png': 'image/png',
+        '.jpg': 'image/jpg',
+        '.svg':	'image/svg+xml',
+        '.css':	'text/css',
+        '.js':	'application/x-javascript',
+        '': 'application/octet-stream', # Default
+    }
+
+
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
@@ -44,7 +59,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
             if not self.valid_method():
 
                 header = "HTTP/1.1 405 Method Not Allowed\n\n"
-                response = '<html><body><center><h3>Error 405: Method not allowed</h3></center></body></html>' #.encode('utf-8')
+                response = ''
+                # response = '<html><body><center><h3>Error 405: Method not allowed</h3></center></body></html>' #.encode('utf-8')
                 self.send_response(header, response)
 
             else:
