@@ -1,6 +1,7 @@
 #  coding: utf-8 
 import socketserver
 import os
+from urllib.parse import urlparse
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -33,14 +34,14 @@ import os
 class MyWebServer(socketserver.BaseRequestHandler):
     
     # https://gist.github.com/HaiyangXu/ec88cbdce3cdbac7b8d5
-    self.extensions_map={
-        '.manifest': 'text/cache-manifest',
-        '.html': 'text/html',
-        '.png': 'image/png',
-        '.jpg': 'image/jpg',
-        '.svg':	'image/svg+xml',
-        '.css':	'text/css',
-        '.js':	'application/x-javascript',
+    extensions_map={
+        'manifest': 'text/cache-manifest',
+        'html': 'text/html',
+        'png': 'image/png',
+        'jpg': 'image/jpg',
+        'svg':	'image/svg+xml',
+        'css':	'text/css',
+        'js':	'application/x-javascript',
         '': 'application/octet-stream', # Default
     }
 
@@ -92,7 +93,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
                         if self.file_path == 'www/favicon.ico':
                             with open(self.file_path, "rb") as f:
                                 ico = f.read()
-                            response = f"Content-Type: image/x-icon\r\nContent-Length: {len(ico)}\r\n\r\n"
+                            response = f"Content-Type: image/x-icon\r\nContent-Length: {len(ico)}\r\n\r\n" + ico
 
                         else:    
                             # https://www.codementor.io/@joaojonesventura/building-a-basic-http-server-from-scratch-in-python-1cedkg0842
